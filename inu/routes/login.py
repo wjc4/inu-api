@@ -79,17 +79,16 @@ def receive_image():
             print("Head tilted")
             result['status'] = 3
             db.update(db_entry, result)
-
-    return jsonify(result['status'])
+    return jsonify({'status': result['status']})
 
 @app.route('/login', methods=['GET'])
 def login():
     result = db.get(db_entry)
     result['status'] = 0
     db.update(db_entry, result)
-    return jsonify(result['status'])
+    return jsonify({'status': result['status']})
 
 @app.route('/status', methods=['GET'])
 def status():
     result = db.get(db_entry)
-    return jsonify(result['status'])
+    return jsonify({'status': result['status']})
