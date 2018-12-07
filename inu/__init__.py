@@ -8,8 +8,8 @@ from .db import *
 db = DBConnection()
 
 import inu.routes.square
-import inu.routes.hardcode
-
+# import inu.routes.hardcode
+import inu.routes.login
 
 
 # if 'DYNO' in os.environ:
