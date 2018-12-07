@@ -37,7 +37,6 @@ def get_features(image):
 def check_similarity(ref, img, thresh):
 	mat = diff(ref,img)
 	score = np.sum(mat ** 2)
-	print("Euclidean distance is: ", score)
 	return score < thresh
 
 def check_mouth_open(ref, img, thresh=1.2):
@@ -52,9 +51,30 @@ def check_mouth_open(ref, img, thresh=1.2):
 	ver_dist = np.amax(vertical) - np.amin(vertical)
 	return ver_dist > threshold
 
+def find_centroid(lm, start, end):
+	points = lm[start:end]
+	center = points.mean(axis=0).astype("int")
+	return center[0], center[1]
 
+def tilt_head_check(ref, img):
+	ref_ratio = tilt_analysis(ref)
+	img_ratio = tilt_analysis(img)
+	print(img_ratio / ref_ratio)
+	return img_ratio / ref_ratio > 1.2
+
+def tilt_analysis(img):
+	left_eye = find_centroid(img, 22, 27)
+	right_eye = find_centroid(img, 36, 42)
+	eye_center = [(left_eye[0] + right_eye[0])/2 , (left_eye[1] + right_eye[1]) /2 ]
+	nose = find_centroid(img, 27, 35)
+	jaw = find_centroid(img, 0, 17)
+	nose2jaw = distance.euclidean(nose, jaw)
+	eye2nose = distance.euclidean(eye_center, nose)
+	return nose2jaw / eye2nose
+	# find eye center
+	#compare eye center with nose distance
+	#compare
 if __name__ == '__main__':
-
 	ref_path = './reference2.jpg'
 	img_path = './example.jpg'
 	next_path = './mouth_open.jpg'
@@ -73,3 +93,5 @@ if __name__ == '__main__':
 	#checks if mouth is open
 	check = check_mouth_open(img, img2)
 	print(check)
+
+	check = tilt_head_check(img, img2)
