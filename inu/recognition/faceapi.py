@@ -170,13 +170,14 @@ def check_face(faceId, personId, personGroupId):
 def main():
 	personGroupId = "inuvators"
 	personGroupName = "Inuvators"
-	name = "Jie Xun"
+	name = "De Sheng"
 
-	create_person_group(personGroupName, personGroupId) # create the group inuvators
-	personId = create_person(name, personGroupId) # create the person Jie Xun. This personId needs to be saved into DB.
+	# create_person_group(personGroupName, personGroupId) # create the group inuvators
+	# personId = create_person(name, personGroupId) # create the person Jie Xun. This personId needs to be saved into DB.
 	
+	personId = 'a97bf5e8-1e67-4970-a37a-a3be941fee96' # derp
 	# register a face under the personId
-	with open("jx.jpg", "rb") as imageFile:
+	with open("derp.jpg", "rb") as imageFile:
 		f = imageFile.read()
 		b = bytearray(f)
 	add_face(b, personId, personGroupId)
