@@ -59,7 +59,7 @@ def receive_image():
             if 'emotions' in result:
                 result['emotions'].append(face_attributes)
             else:
-                result['emotion'] = [face_attributes]
+                result['emotions'] = [face_attributes]
             reference_image = fileImg
     elif status == 1:
         # do liveliness check 1
