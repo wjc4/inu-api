@@ -6,10 +6,10 @@ import dlib
 import cv2
 from sklearn.metrics.pairwise import paired_euclidean_distances as diff
 from scipy.spatial import distance
-
+from PIL import Image
 
 shape_pred = './inu/headpose/shape_predictor_68_face_landmarks.dat'
-
+#shape_pred='./shape_predictor_68_face_landmarks.dat'
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor
 detector = dlib.get_frontal_face_detector()
@@ -17,7 +17,8 @@ predictor = dlib.shape_predictor(shape_pred)
 
 
 def get_features(image):
-
+	open_cv_image = np.array(image)
+	image = open_cv_image[:, :, ::-1].copy()
 	image = imutils.resize(image, width=500)
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	# detect faces in the grayscale image
@@ -76,22 +77,30 @@ def tilt_analysis(img):
 	#compare
 if __name__ == '__main__':
 	ref_path = './reference2.jpg'
-	img_path = './example.jpg'
+	#img_path = './example.jpg'
 	next_path = './mouth_open.jpg'
-
-	image = cv2.imread(ref_path)
-	image2 = cv2.imread(next_path)
+	image2 = Image.open(next_path)
+	image = Image.open(ref_path)
 
 	#get the landmark features as the coordinates
+	import time
+	s = time.time()
 	img = np.asarray(get_features(image))
 	img2 = np.asarray(get_features(image2))
+	e = time.time()
+	print(e - s)
 
 	#specify threshold for
 	#checks euclidean distance
-	diff_mat = check_similarity(img, img2, thresh=20000)
-
-	#checks if mouth is open
+	s = time.time()
 	check = check_mouth_open(img, img2)
 	print(check)
+	e = time.time()
+	print(e - s)
+
+	#checks if mouth is open
+	s = time.time()
 
 	check = tilt_head_check(img, img2)
+	e = time.time()
+	print(e - s)
