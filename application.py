@@ -24,5 +24,5 @@ if __name__ == "__main__":
     #     rootLogger.addHandler(consoleHandler)
 
         # logger.info("Starting application ...")
-    application.run()
+    application.run(host="0.0.0.0", port=80)
     # app.run(debug=True)

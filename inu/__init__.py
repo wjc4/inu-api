@@ -9,7 +9,7 @@ from .sns import *
 db = DBConnection()
 sns = SNSConnection()
 
-import inu.routes.square
+# import inu.routes.square
 # import inu.routes.hardcode
 import inu.routes.login
 

@@ -1,4 +1,3 @@
-cmake
 Flask
 psycopg2
 pillow
