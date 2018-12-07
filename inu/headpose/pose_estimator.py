@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import paired_euclidean_distances as diff
 from scipy.spatial import distance
 
 
-shape_pred = './shape_predictor_68_face_landmarks.dat'
+shape_pred = './inu/headpose/shape_predictor_68_face_landmarks.dat'
 
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor

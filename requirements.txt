@@ -1,5 +1,11 @@
+cmake
 Flask
 psycopg2
 pillow
 numpy
 boto3
+imutils
+dlib
+opencv-python
+sklearn
+scipy
