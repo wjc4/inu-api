@@ -59,7 +59,7 @@ def receive_image():
             if 'emotions' in result:
                 result['emotions'].append(face_attributes)
             else:
-                result['emotion'] = [face_attributes]
+                result['emotions'] = [face_attributes]
             reference_image = fileImg
     elif status == 1:
         # do liveliness check 1
@@ -80,14 +80,14 @@ def receive_image():
             result['status'] = 3
             db.update(db_entry, result)
 
-    return jsonify({"message": "hi"})
+    return jsonify(result['status'])
 
 @app.route('/login', methods=['GET'])
 def login():
     result = db.get(db_entry)
     result['status'] = 0
     db.update(db_entry, result)
-    return jsonify(result)
+    return jsonify(result['status'])
 
 @app.route('/status', methods=['GET'])
 def status():
