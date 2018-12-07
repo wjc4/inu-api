@@ -1,4 +1,5 @@
 Flask
 psycopg2
 pillow
+numpy
 boto3

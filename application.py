@@ -1,29 +1,95 @@
-import logging
-import os
-from inu import application
+# import logging
+
+from flask import request, jsonify
+
+from inu import application as app
+from inu import db
+
+from inu.recognition import faceapi
+from inu.headpose import pose_estimator as pe
+
+import io
+from PIL import Image
+import time
+import numpy as np
+
 # logger = logging.getLogger(__name__)
+name = 'Ang Yang'
+personGroupId = 'inuvators'
+personId =
+db_entry = 'inuvator'
+reference_image = ''
 
-@application.route('/', methods=['GET'])
-def default_route():
-    application.logger.info("base url requested. saying hello")
-    return "Team XYZ page. Hello"
+@app.route('/image', methods=['POST'])
+def receive_image():
+    # data = request.get_data()
+    # print("rekt")
+    # print(data)
 
-if __name__ == "__main__":
-    # if 'DYNO' not in os.environ:   
-    #     logFormatter = logging.Formatter("%(asctime)s [%(filename)s] [%(funcName)s] [%(lineno)d] [%(levelname)-5.5s]  %(message)s")
-    #     rootLogger = logging.getLogger()
+    result = db.get(db_entry)
+    status = result['status']
+    names = list(request.files.keys())
+    for name in names:
+        #first receive the file from the raspi
+        print('received')
+        fileImg  = request.files[name].read()
+        filename = request.files[name].filename
+        print(type(fileImg))
+        print(fileImg)
+        im = Image.open(io.BytesIO(fileImg))
+        try:
+            im.verify()
+            print('Valid image')
+        except Exception:
+            print('Invalid image')
+        if im.format == 'JPEG':
+            print('JPEG image')
+        else:
+            print('Invalid image type')
+        # nameSaved = './static/' + str(time.time()).replace('.', '')[-3:] + filename
+        # im.save(nameSaved)
 
-    #     rootLogger.setLevel(logging.INFO)
+    global reference_image
+    if status == 0:
+        print('recognising')
+        correct, face_attributes = check_image(fileImg, personId, personGroupId)
+        if correct:
+            result['status'] = 1
+            db.update(db_entry, result)
+            if 'emotions' in result:
+                result['emotions'].append(face_attributes)
+            else:
+                result['emotion'] = [face_attributes]
+            reference_image = fileImg
+    elif status == 1:
+        # do liveliness check 1
+        ref_lm = np.asarray(pe.get_features(reference_image))
+        lm = np.asarray(pe.get_features(ref_lm))
+        verify = pe.check_mouth_open(ref_lm, lm)
+        if verify:
+            print("Mouth open")
+            result['status'] = 2
+            db.update(db_entry, result)
+    elif status == 2:
+        # do liveliness check 2
+        ref_lm = np.asarray(pe.get_features(reference_image))
+        lm = np.asarray(pe.get_features(ref_lm))
+        verify = pe.tilt_head_check(ref_lm, lm)
+        if verify:
+            print("Head tilted")
+            result['status'] = 3
+            db.update(db_entry, result)
 
-    #     fileHandler = logging.FileHandler("team.log")
-    #     fileHandler.setFormatter(logFormatter)
-    #     rootLogger.addHandler(fileHandler)
+    return jsonify({"message": "hi"})
 
-    #     consoleHandler = logging.StreamHandler()
-    #     consoleHandler.setFormatter(logFormatter)
-    #     rootLogger.addHandler(consoleHandler)
+@app.route('/login', methods=['GET'])
+def login():
+    result = db.get(db_entry)
+    result['status'] = 0
+    db.update(db_entry, result)
+    return jsonify(result)
 
-        # logger.info("Starting application ...")
-    application.run()
-    # app.run(debug=True)
-
+@app.route('/status', methods=['GET'])
+def status():
+    result = db.get(db_entry)
+    return jsonify(result['status'])
