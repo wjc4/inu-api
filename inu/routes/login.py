@@ -29,23 +29,29 @@ def receive_image():
     result = db.get(db_entry)
     status = result['status']
     names = list(request.files.keys())
+
+    valid = False
     for name in names:
         #first receive the file from the raspi
         print('received')
         fileImg  = request.files[name].read()
         filename = request.files[name].filename
         print(type(fileImg))
-        print(fileImg)
+        # print(fileImg)
         im = Image.open(io.BytesIO(fileImg))
         try:
             im.verify()
             print('Valid image')
+            if im.format == 'JPEG':
+                valid = True
+                print('JPEG image')
+                break
+            else:
+                print('Invalid image type')
         except Exception:
             print('Invalid image')
-        if im.format == 'JPEG':
-            print('JPEG image')
-        else:
-            print('Invalid image type')
+        if valid:
+            break
         # nameSaved = './static/' + str(time.time()).replace('.', '')[-3:] + filename
         # im.save(nameSaved)
 
