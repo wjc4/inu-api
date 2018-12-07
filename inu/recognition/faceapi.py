@@ -1,39 +1,81 @@
-import httplib, urllib, base64
+import http.client, urllib.parse, base64
 import json
 import io
 
 ''' to save in database: 
-	personId, name, userData, personGroupId, persistedFaceId (use this to remove face added to person) 
+	personId, name, persistedFaceId (use this to remove face added to person) 
 '''
 
+headers = {
+	# Request headers
+	'Content-Type': 'application/json',
+	'Ocp-Apim-Subscription-Key': 'caa064caa43e46df93091eb67357edba',
+}
+
+params = urllib.parse.urlencode({})
 
 ##### CREATE PERSON GROUP, GET PERSONID #####
-def create_person(name, personGroupId):
-	headers = {
-		# Request headers
-		'Content-Type': 'application/json',
-		'Ocp-Apim-Subscription-Key': 'caa064caa43e46df93091eb67357edba',
-	}
-
-	create_params = urllib.urlencode({
-		'personGroupId': personGroupId
-	})
-
+def create_person_group(name, personGroupId):
 	body = {
 		"name": name,
 		"userData":"nothing"
 	}
 
-	conn = httplib.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
-	conn.request("POST", "/face/v1.0/persongroups/{personGroupId}/persons?%s" % create_params, str(body), headers)
-	response = conn.getresponse()
-	data = response.read()
-	conn.close()
-	print('created person:\n'+str(data))
+	try:
+		conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+		conn.request("PUT", "/face/v1.0/persongroups/"+personGroupId+"?"+params, str(body), headers)
+		response = conn.getresponse()
+		data = response.read()
+		print('created person group: {}'.format(personGroupId))
+		conn.close()
+	except Exception as e:
+		print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
+
+def create_person(name, personGroupId='inuvators'):
+	body = {
+		"name": name,
+		"userData":"nothing"
+	}
+
+	try:
+		conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+		conn.request("POST", "/face/v1.0/persongroups/"+personGroupId+"/persons?"+params, str(body), headers)
+		response = conn.getresponse()
+		data = response.read()
+		print(data)
+		conn.close()
+	except Exception as e:
+		print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
 	json_data = json.loads(data)
 	personId = json_data['personId']
 	return personId
+
+def delete_person_group(personGroupId):
+	body = {}
+	try:
+	    conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+	    conn.request("DELETE", "/face/v1.0/persongroups/"+personGroupId+"?"+params, str(body), headers)
+	    response = conn.getresponse()
+	    data = response.read()
+	    print(data)
+	    conn.close()
+	except Exception as e:
+	    print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
+def delete_person(personId, personGroupId):
+	body = {}
+	try:
+	    conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+	    conn.request("DELETE", "/face/v1.0/persongroups/"+personGroupId+"/persons/"+personId+"?"+params, str(body), headers)
+	    response = conn.getresponse()
+	    data = response.read()
+	    print(data)
+	    conn.close()
+	except Exception as e:
+	    print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
 
 def add_face(image_data, personId, personGroupId):
 	headers = {
@@ -43,7 +85,7 @@ def add_face(image_data, personId, personGroupId):
 		'Process-Data': False
 	}
 
-	addface_params = urllib.urlencode({
+	addface_params = urllib.parse.urlencode({
 		# Request parameters
 		'personGroupId': personGroupId,
 		'personId': personId
@@ -51,8 +93,8 @@ def add_face(image_data, personId, personGroupId):
 
 	body = image_data
 
-	conn = httplib.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
-	conn.request("POST", "/face/v1.0/persongroups/{personGroupId}/persons/{personId}/persistedFaces?%s" % addface_params, str(body), headers)
+	conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+	conn.request("POST", "/face/v1.0/persongroups/"+personGroupId+"/persons/"+personId+"/persistedFaces?"+addface_params, body, headers)
 	response = conn.getresponse()
 	data = response.read()
 	print('added face:\n'+str(data))
@@ -63,8 +105,7 @@ def add_face(image_data, personId, personGroupId):
 
 ##### CHECK IF PHOTO CONTAINS PERSON #####
 # Use Detect to get faceIds of faces in each photo, call Verify.
-# If verified, then use result from Detect to get location
-# returns detection_status, fearfulness
+# returns detection_status, face_attributes (if verified)
 def check_image(image_data, personId, personGroupId):
 	headers = {
 		# Request headers
@@ -73,17 +114,17 @@ def check_image(image_data, personId, personGroupId):
 		'Process-Data': False
 	}
 
-	params = urllib.urlencode({
+	params = urllib.parse.urlencode({
 		# Request parameters
 		'returnFaceId': 'true',
 		'returnFaceLandmarks': 'false',
+		'returnFaceAttributes': 'emotion'
 	})
 
 	body = image_data
 
-
-	conn = httplib.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
-	conn.request("POST", "/face/v1.0/detect?%s" % params, body, headers)
+	conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+	conn.request("POST", "/face/v1.0/detect?"+params, body, headers)
 	response = conn.getresponse()
 	data = response.read()
 	print('checked photo:\n'+str(data))
@@ -99,6 +140,7 @@ def check_image(image_data, personId, personGroupId):
 	else:
 		return (False, None)
 
+# Face to person recognition.
 def check_face(faceId, personId, personGroupId):
 	headers = {
 		# Request headers
@@ -106,18 +148,14 @@ def check_face(faceId, personId, personGroupId):
 		'Ocp-Apim-Subscription-Key': 'caa064caa43e46df93091eb67357edba',
 	}
 
-
-	params = urllib.urlencode({
-	})
-
 	body = {
 		'faceId': faceId,
 		'personId': personId,
 		'personGroupId': personGroupId
 	}
 
-	conn = httplib.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
-	conn.request("POST", "/face/v1.0/verify?%s" % params, str(body), headers)
+	conn = http.client.HTTPSConnection('westcentralus.api.cognitive.microsoft.com')
+	conn.request("POST", "/face/v1.0/verify?"+params, str(body), headers)
 	response = conn.getresponse()
 	data = response.read()
 	print('checked face:\n'+str(data))
@@ -130,33 +168,26 @@ def check_face(faceId, personId, personGroupId):
 		return False
 
 def main():
-	# name = 'Vladimr Putin'
-	# personGroupId = 'putin'
-	# selfie = 'http://i.telegraph.co.uk/multimedia/archive/03463/putin_3463140k.jpg'
-	# photo = 'https://jafrianews.files.wordpress.com/2012/05/russian-president-putin-with-vladimir-putin-may-7-2012.jpg'
-	# photo = 'http://i.telegraph.co.uk/multimedia/archive/03463/putin_3463140k.jpg'
+	personGroupId = "inuvators"
+	personGroupName = "Inuvators"
+	name = "Jie Xun"
 
-
-	# urllib.urlretrieve(photo, 'photo.jpg')
-	with open("IMG_0641.JPG", "rb") as imageFile:
+	create_person_group(personGroupName, personGroupId) # create the group inuvators
+	personId = create_person(name, personGroupId) # create the person Jie Xun. This personId needs to be saved into DB.
+	
+	# register a face under the personId
+	with open("jx.jpg", "rb") as imageFile:
 		f = imageFile.read()
 		b = bytearray(f)
+	add_face(b, personId, personGroupId)
 
-	'''jiarui'''
-	# add_face(b, 'cd09435a-c73b-4df2-888a-31af70a8a2f1', 'jiarui')
-	#b5f2f363-39c4-4f6f-80f8-2f222ee48be8 <-- persisted face that wasa wrongly added, removed alr
+	with open("jx2.jpg", "rb") as imageFile:
+		f = imageFile.read()
+		b = bytearray(f)
+	correct, face_attributes = check_image(b, personId, personGroupId)
 
-	'''xinchen'''
-	#add_face(b, 'e49417ac-0960-4711-a6e4-be3ffaf32ab9', 'xinchen')
-
-	'''jiexun'''
-	#add_face(b, '83210ef7-0ac4-413b-8c75-3eab6beb101b', 'jiexun')
-	# ee447ea5-4abe-4ff7-a363-14cba98b434b  <-- persisted face for smiling face I added
-
-	# possible_coords = check_photo(b, 'e49417ac-0960-4711-a6e4-be3ffaf32ab9', 'xinchen')
-	# print (possible_coords)
-	# print ('done!')
+	# delete_person(personId, personGroupId)
+	# delete_person_group(personGroupId)
 
 if __name__ == '__main__':
 	main()
-	#check_face('30d72dba-7049-485b-9421-5a64255d195c', 'b00c6a39-7807-4cf2-9a04-6b41f2efcf18', 'putin')
