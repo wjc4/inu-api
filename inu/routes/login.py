@@ -70,7 +70,7 @@ def receive_image():
     elif status == 1:
         # do liveliness check 1
         ref_lm = np.asarray(pe.get_features(reference_image))
-        lm = np.asarray(pe.get_features(ref_lm))
+        lm = np.asarray(pe.get_features(im))
         verify = pe.check_mouth_open(ref_lm, lm)
         if verify:
             print("Mouth open")
@@ -79,7 +79,7 @@ def receive_image():
     elif status == 2:
         # do liveliness check 2
         ref_lm = np.asarray(pe.get_features(reference_image))
-        lm = np.asarray(pe.get_features(ref_lm))
+        lm = np.asarray(pe.get_features(im))
         verify = pe.tilt_head_check(ref_lm, lm)
         if verify:
             print("Head tilted")
